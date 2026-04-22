@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Lightweight type-safe i18n provider and hook for React apps.",
   "license": "MIT",
-  "author": "tlouverse",
+  "author": "Thomas Louvet",
   "keywords": [
     "i18n",
     "react",
