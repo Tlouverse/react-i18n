@@ -1,0 +1,57 @@
+{
+  "name": "@tlouverse/react-i18n",
+  "version": "0.1.0",
+  "description": "Lightweight type-safe i18n provider and hook for React apps.",
+  "license": "MIT",
+  "author": "tlouverse",
+  "keywords": [
+    "i18n",
+    "react",
+    "typescript",
+    "tlouverse"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tlouverse/react-i18n.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tlouverse/react-i18n/issues"
+  },
+  "homepage": "https://github.com/Tlouverse/react-i18n#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.8.0"
+  }
+}
