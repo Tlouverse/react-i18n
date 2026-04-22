@@ -53,7 +53,7 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
   }
 
   const { persist = false, storageKey = 'tlv_locale', validate = false } = options;
-  const defaultLocale = (options.defaultLocale ?? available[0]) as TLocale;
+  const defaultLocale = options.defaultLocale ?? available[0];
 
   if (validate) {
     for (const key of available) {
@@ -69,15 +69,15 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
   function I18nProvider({ children, defaultLocale: localeProp }: { children: ReactNode; defaultLocale?: TLocale }) {
     const initial = (persist ? readStorage(storageKey, available) : null) ?? localeProp ?? defaultLocale;
 
-    const [locale, _setLocale] = useState<TLocale>(initial);
+    const [locale, setLocale] = useState<TLocale>(initial);
 
-    const setLocale = useCallback((next: TLocale) => {
+    const applyLocale = useCallback((next: TLocale) => {
       if (!available.includes(next)) {
         console.warn(`[@tlouverse/react-i18n] Unknown locale "${next}". Available: ${available.join(', ')}.`);
         return;
       }
       if (persist) writeStorage(storageKey, next);
-      _setLocale(next);
+      setLocale(next);
     }, []);
 
     const t = useCallback<TranslationFn<Key>>(
@@ -88,7 +88,7 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
       [locale],
     );
 
-    const handle = useMemo<Handle>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+    const handle = useMemo<Handle>(() => ({ locale, setLocale: applyLocale, t }), [locale, applyLocale, t]);
 
     return <Context.Provider value={handle}>{children}</Context.Provider>;
   }
