@@ -1,23 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { I18nHandle, I18nOptions, Leaves, Mirror, TranslationFn } from './types.js';
-import { fill, resolve, validateShape } from './utils.js';
-
-function readStorage<TLocale extends string>(storageKey: string, available: TLocale[]): TLocale | null {
-  try {
-    const stored = localStorage.getItem(storageKey) as TLocale | null;
-    return stored && available.includes(stored) ? stored : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeStorage(storageKey: string, locale: string): void {
-  try {
-    localStorage.setItem(storageKey, locale);
-  } catch {
-    /* quota or SSR — silently ignore */
-  }
-}
+import { PKG } from './constants.js';
+import { fill, readStorage, resolve, validateShape, writeStorage } from './utils.js';
 
 /**
  * Binds locale data to a type-safe React provider + hook pair.
@@ -46,10 +30,13 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
   locales: Record<TLocale, Mirror<TBase>>,
   options: I18nOptions<TLocale> = {},
 ) {
+  type Key = Leaves<TBase>
+  type Handle = I18nHandle<Key, TLocale>
+
   const available = Object.keys(locales) as TLocale[];
 
   if (available.length === 0) {
-    throw new Error('[@tlouverse/react-i18n] Pass at least one locale to createI18n.');
+    throw new Error(`${PKG} Pass at least one locale to createI18n.`);
   }
 
   const { persist = false, storageKey = 'tlv_locale', validate = false } = options;
@@ -61,9 +48,6 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
     }
   }
 
-  type Key = Leaves<TBase>;
-  type Handle = I18nHandle<Key, TLocale>;
-
   const Context = createContext<Handle | null>(null);
 
   function I18nProvider({ children, defaultLocale: localeProp }: { children: ReactNode; defaultLocale?: TLocale }) {
@@ -73,7 +57,7 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
 
     const applyLocale = useCallback((next: TLocale) => {
       if (!available.includes(next)) {
-        console.warn(`[@tlouverse/react-i18n] Unknown locale "${next}". Available: ${available.join(', ')}.`);
+        console.warn(`${PKG} Unknown locale "${next}". Available: ${available.join(', ')}.`);
         return;
       }
       if (persist) writeStorage(storageKey, next);
@@ -95,7 +79,7 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
 
   function useTranslation(): Handle {
     const ctx = useContext(Context);
-    if (!ctx) throw new Error('[@tlouverse/react-i18n] useTranslation must be called inside <I18nProvider>.');
+    if (!ctx) throw new Error(`${PKG} useTranslation must be called inside <I18nProvider>.`);
     return ctx;
   }
 
