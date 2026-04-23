@@ -1,6 +1,6 @@
 {
   "name": "@tlouverse/react-i18n",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Lightweight type-safe i18n provider and hook for React apps.",
   "license": "MIT",
   "author": "Thomas Louvet",
