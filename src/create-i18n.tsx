@@ -30,8 +30,8 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
   locales: Record<TLocale, Mirror<TBase>>,
   options: I18nOptions<TLocale> = {},
 ) {
-  type Key = Leaves<TBase>
-  type Handle = I18nHandle<Key, TLocale>
+  type Key = Leaves<TBase>;
+  type Handle = I18nHandle<Key, TLocale>;
 
   const available = Object.keys(locales) as TLocale[];
 
