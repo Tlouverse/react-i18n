@@ -24,6 +24,20 @@ import { fill, readStorage, resolve, validateShape, writeStorage } from './utils
  * const { t, locale, setLocale } = useTranslation()
  * t('nav.home') // → 'Home' or 'Accueil'
  * ```
+ *
+ * @example Lazy locale loading
+ * ```ts
+ * export const { I18nProvider, useTranslation } = createI18n(en, { en }, {
+ *   loadLocale: async (locale) => {
+ *     const mod = await import(`./locales/${locale}.json`)
+ *     return mod.default
+ *   }
+ * })
+ *
+ * // In a component:
+ * const { t, setLocale, isLoading } = useTranslation()
+ * <button onClick={() => setLocale('fr')} disabled={isLoading}>Switch language</button>
+ * ```
  */
 export function createI18n<TBase extends Record<string, unknown>, TLocale extends string>(
   referenceLocale: TBase,
@@ -39,7 +53,7 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
     throw new Error(`${PKG} Pass at least one locale to createI18n.`);
   }
 
-  const { persist = false, storageKey = 'tlv_locale', validate = false } = options;
+  const { persist = false, storageKey = 'tlv_locale', validate = false, loadLocale } = options;
   const defaultLocale = options.defaultLocale ?? available[0];
 
   if (validate) {
@@ -48,31 +62,61 @@ export function createI18n<TBase extends Record<string, unknown>, TLocale extend
     }
   }
 
+  const cache = new Map<TLocale, Mirror<TBase>>(
+    Object.entries(locales).map(([k, v]) => [k as TLocale, v as Mirror<TBase>]),
+  );
+
   const Context = createContext<Handle | null>(null);
 
   function I18nProvider({ children, defaultLocale: localeProp }: { children: ReactNode; defaultLocale?: TLocale }) {
     const initial = (persist ? readStorage(storageKey, available) : null) ?? localeProp ?? defaultLocale;
 
     const [locale, setLocale] = useState<TLocale>(initial);
+    const [isLoading, setIsLoading] = useState(false);
 
     const applyLocale = useCallback((next: TLocale) => {
       if (!available.includes(next)) {
         console.warn(`${PKG} Unknown locale "${next}". Available: ${available.join(', ')}.`);
         return;
       }
-      if (persist) writeStorage(storageKey, next);
-      setLocale(next);
+
+      if (cache.has(next)) {
+        if (persist) writeStorage(storageKey, next);
+        setLocale(next);
+        return;
+      }
+
+      if (!loadLocale) {
+        console.warn(`${PKG} Locale "${next}" is not in the eager map and no loadLocale was provided.`);
+        return;
+      }
+
+      setIsLoading(true);
+      loadLocale(next)
+        .then((translations) => {
+          cache.set(next, translations as Mirror<TBase>);
+          if (persist) writeStorage(storageKey, next);
+          setLocale(next);
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          console.warn(`${PKG} Failed to load locale "${next}".`, err);
+          setIsLoading(false);
+        });
     }, []);
 
     const t = useCallback<TranslationFn<Key>>(
       (key, vars) => {
-        const raw = resolve(locales[locale] as Record<string, unknown>, key as string);
+        const raw = resolve(cache.get(locale) as Record<string, unknown>, key as string);
         return vars ? fill(raw, vars) : raw;
       },
       [locale],
     );
 
-    const handle = useMemo<Handle>(() => ({ locale, setLocale: applyLocale, t }), [locale, applyLocale, t]);
+    const handle = useMemo<Handle>(
+      () => ({ locale, setLocale: applyLocale, t, isLoading }),
+      [locale, applyLocale, t, isLoading],
+    );
 
     return <Context.Provider value={handle}>{children}</Context.Provider>;
   }

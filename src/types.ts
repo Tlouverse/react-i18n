@@ -22,6 +22,8 @@ export type I18nHandle<TKey extends string, TLocale extends string> = {
   locale: TLocale;
   setLocale: (locale: TLocale) => void;
   t: TranslationFn<TKey>;
+  /** True while a lazy locale is being fetched. Always `false` when `loadLocale` is not set. */
+  isLoading: boolean;
 };
 
 /** Options accepted by `createI18n`. */
@@ -37,4 +39,9 @@ export type I18nOptions<TLocale extends string> = {
    * Logs a warning for every missing key. Default: `false`.
    */
   validate?: boolean;
+  /**
+   * Fetch a locale's translations on demand. Called once per locale and cached.
+   * Locales already in the eager map are never fetched.
+   */
+  loadLocale?: (locale: TLocale) => Promise<Mirror<Record<string, unknown>>>;
 };

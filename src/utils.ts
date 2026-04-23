@@ -25,7 +25,7 @@ export function fill(template: string, vars: Record<string, string | number>): s
 
 /** Reads a stored locale from localStorage. Returns null if absent, invalid, or on the server. */
 export function readStorage<TLocale extends string>(storageKey: string, available: TLocale[]): TLocale | null {
-  if (typeof window === 'undefined') return null;
+  if (globalThis.window === undefined) return null;
   try {
     const stored = localStorage.getItem(storageKey) as TLocale | null;
     return stored && available.includes(stored) ? stored : null;
@@ -37,7 +37,7 @@ export function readStorage<TLocale extends string>(storageKey: string, availabl
 
 /** Writes the current locale to localStorage. No-op on the server. */
 export function writeStorage(storageKey: string, locale: string): void {
-  if (typeof window === 'undefined') return;
+  if (globalThis.window === undefined) return;
   try {
     localStorage.setItem(storageKey, locale);
   } catch (err) {
@@ -45,7 +45,7 @@ export function writeStorage(storageKey: string, locale: string): void {
   }
 }
 
-/** Dev-only: warns when a locale is missing keys present in the reference locale. */
+/** Dev-only: warns on missing keys (from reference) and extra keys (stale) in a locale. */
 export function validateShape(
   reference: Record<string, unknown>,
   locale: Record<string, unknown>,
@@ -68,6 +68,13 @@ export function validateShape(
         localeName,
         fullPath,
       );
+    }
+  }
+
+  for (const key of Object.keys(locale)) {
+    const fullPath = path ? `${path}.${key}` : key;
+    if (!(key in reference)) {
+      console.warn(`${PKG} Extra key "${fullPath}" in locale "${localeName}" has no match in the reference locale (stale translation?).`);
     }
   }
 }

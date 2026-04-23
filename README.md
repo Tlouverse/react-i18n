@@ -148,7 +148,43 @@ export const { I18nProvider, useTranslation } = createI18n(en, { en, fr }, {
 })
 ```
 
-This is opt-in. Enable it during development or in CI; leave it off in production.
+This also warns on extra keys in non-reference locales (stale translations). Enable it during development or in CI; leave it off in production.
+
+## Lazy locale loading
+
+Bundle only the default locale upfront and load others on demand via `loadLocale`. The fetched locale is cached — it is only loaded once per session.
+
+```ts
+// src/i18n/index.ts
+export const { I18nProvider, useTranslation } = createI18n(en, { en }, {
+  loadLocale: async (locale) => {
+    const mod = await import(`./locales/${locale}.json`)
+    return mod.default
+  },
+})
+```
+
+Use `isLoading` from `useTranslation()` to reflect the loading state in your UI:
+
+```tsx
+function LanguageSelector() {
+  const { locale, setLocale, isLoading } = useTranslation()
+
+  return (
+    <select
+      value={locale}
+      disabled={isLoading}
+      onChange={e => setLocale(e.target.value as typeof locale)}
+    >
+      {availableLocales.map(code => (
+        <option key={code} value={code}>{code.toUpperCase()}</option>
+      ))}
+    </select>
+  )
+}
+```
+
+While a locale is loading, `t()` continues to return translations from the previous locale.
 
 ## API
 
@@ -164,22 +200,24 @@ Returns `{ I18nProvider, useTranslation, availableLocales }`.
 
 ### `I18nOptions`
 
-| Option          | Type      | Default        | Description                                       |
-|-----------------|-----------|----------------|---------------------------------------------------|
-| `defaultLocale` | `string`  | first key      | Locale to use when none is stored or provided     |
-| `persist`       | `boolean` | `false`        | Persist selected locale in `localStorage`         |
-| `storageKey`    | `string`  | `"tlv_locale"` | `localStorage` key used when `persist` is `true`  |
-| `validate`      | `boolean` | `false`        | Warn on missing keys at startup                   |
+| Option          | Type                                       | Default        | Description                                          |
+|-----------------|--------------------------------------------|----------------|------------------------------------------------------|
+| `defaultLocale` | `string`                                   | first key      | Locale to use when none is stored or provided        |
+| `persist`       | `boolean`                                  | `false`        | Persist selected locale in `localStorage`            |
+| `storageKey`    | `string`                                   | `"tlv_locale"` | `localStorage` key used when `persist` is `true`     |
+| `validate`      | `boolean`                                  | `false`        | Warn on missing or extra keys at startup             |
+| `loadLocale`    | `(locale: string) => Promise<translations>` | —              | Fetch a locale on demand; result is cached           |
 
 ### `useTranslation()`
 
-Returns `{ t, locale, setLocale }`.
+Returns `{ t, locale, setLocale, isLoading }`.
 
-| Property    | Type                       | Description                          |
-|-------------|----------------------------|--------------------------------------|
-| `t`         | `(key, vars?) => string`   | Translate a key, with optional vars  |
-| `locale`    | `string`                   | Currently active locale code         |
-| `setLocale` | `(locale: string) => void` | Switch to another locale             |
+| Property    | Type                       | Description                                                  |
+|-------------|----------------------------|--------------------------------------------------------------|
+| `t`         | `(key, vars?) => string`   | Translate a key, with optional vars                          |
+| `locale`    | `string`                   | Currently active locale code                                 |
+| `setLocale` | `(locale: string) => void` | Switch to another locale                                     |
+| `isLoading` | `boolean`                  | `true` while a lazy locale is being fetched; otherwise `false` |
 
 ---
 
@@ -327,7 +365,43 @@ export const { I18nProvider, useTranslation } = createI18n(fr, { fr, en }, {
 })
 ```
 
-Cette option est désactivée par défaut. Activez-la en développement ou en CI ; laissez-la désactivée en production.
+Cela avertit également en cas de clés supplémentaires dans les locales non-référence (traductions obsolètes). Activez-la en développement ou en CI ; laissez-la désactivée en production.
+
+## Chargement différé des locales
+
+Bundlez uniquement la locale par défaut et chargez les autres à la demande via `loadLocale`. La locale récupérée est mise en cache — elle n'est chargée qu'une seule fois par session.
+
+```ts
+// src/i18n/index.ts
+export const { I18nProvider, useTranslation } = createI18n(fr, { fr }, {
+  loadLocale: async (locale) => {
+    const mod = await import(`./locales/${locale}.json`)
+    return mod.default
+  },
+})
+```
+
+Utilisez `isLoading` depuis `useTranslation()` pour refléter l'état de chargement dans l'interface :
+
+```tsx
+function LanguageSelector() {
+  const { locale, setLocale, isLoading } = useTranslation()
+
+  return (
+    <select
+      value={locale}
+      disabled={isLoading}
+      onChange={e => setLocale(e.target.value as typeof locale)}
+    >
+      {availableLocales.map(code => (
+        <option key={code} value={code}>{code.toUpperCase()}</option>
+      ))}
+    </select>
+  )
+}
+```
+
+Pendant le chargement, `t()` continue de retourner les traductions de la locale précédente.
 
 ## API
 
@@ -343,19 +417,21 @@ Retourne `{ I18nProvider, useTranslation, availableLocales }`.
 
 ### `I18nOptions`
 
-| Option          | Type      | Défaut         | Description                                              |
-|-----------------|-----------|----------------|----------------------------------------------------------|
-| `defaultLocale` | `string`  | première clé   | Locale utilisée si aucune n'est stockée ou fournie       |
-| `persist`       | `boolean` | `false`        | Persiste la locale dans `localStorage`                   |
-| `storageKey`    | `string`  | `"tlv_locale"` | Clé `localStorage` utilisée quand `persist` est `true`   |
-| `validate`      | `boolean` | `false`        | Avertit en cas de clés manquantes au démarrage           |
+| Option          | Type                                        | Défaut         | Description                                              |
+|-----------------|---------------------------------------------|----------------|----------------------------------------------------------|
+| `defaultLocale` | `string`                                    | première clé   | Locale utilisée si aucune n'est stockée ou fournie       |
+| `persist`       | `boolean`                                   | `false`        | Persiste la locale dans `localStorage`                   |
+| `storageKey`    | `string`                                    | `"tlv_locale"` | Clé `localStorage` utilisée quand `persist` est `true`   |
+| `validate`      | `boolean`                                   | `false`        | Avertit en cas de clés manquantes ou obsolètes           |
+| `loadLocale`    | `(locale: string) => Promise<translations>` | —              | Charge une locale à la demande ; résultat mis en cache   |
 
 ### `useTranslation()`
 
-Retourne `{ t, locale, setLocale }`.
+Retourne `{ t, locale, setLocale, isLoading }`.
 
-| Propriété   | Type                       | Description                              |
-|-------------|----------------------------|------------------------------------------|
-| `t`         | `(key, vars?) => string`   | Traduit une clé, avec variables optionnelles |
-| `locale`    | `string`                   | Code de la locale active                 |
-| `setLocale` | `(locale: string) => void` | Passer à une autre locale                |
+| Propriété   | Type                       | Description                                                        |
+|-------------|----------------------------|--------------------------------------------------------------------|
+| `t`         | `(key, vars?) => string`   | Traduit une clé, avec variables optionnelles                       |
+| `locale`    | `string`                   | Code de la locale active                                           |
+| `setLocale` | `(locale: string) => void` | Passer à une autre locale                                          |
+| `isLoading` | `boolean`                  | `true` pendant le chargement d'une locale différée, sinon `false`  |

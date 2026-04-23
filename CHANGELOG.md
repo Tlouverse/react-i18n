@@ -2,7 +2,18 @@
 
 All notable changes to `@tlouverse/react-i18n` will be documented here.
 
-## [Unreleased]
+## [0.2.0] — 2026-04-23
+
+### Added
+
+- Lazy locale loading via the `loadLocale` option — fetch locales on demand instead of bundling them all upfront; loaded locales are cached for the session
+- `isLoading` field on `useTranslation()` — `true` while a lazy locale is being fetched, always `false` when `loadLocale` is not set
+
+### Changed
+
+- `validateShape` now warns on extra keys in non-reference locales (stale translations) in addition to missing ones
+
+## [0.1.1] — 2026-04-23
 
 ### Added
 
